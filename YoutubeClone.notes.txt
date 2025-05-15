@@ -1,0 +1,250 @@
+https://www.youtube.com/watch?v=ArmPzvHTcfQ&t=250s
+
+Vamos a usar bun (es una alternativa a node) como environment, ejecutor e instalador de packages
+
+IMPORTANTE: como no hay docu entiendo, aún, hay que memorizar las equivalencias
+bunx === npx
+bun add === npm install
+
+Para crear la app de Next(si usara npx)
+>npx create-next-app@latest <- necesita Node > 18.18, además usar latest introduciría muchos breaking-changes,usaremos una versión concreta
+pero como vamos a usar bun sería
+
+bunx create-next-app@15.1.6 <- es la del profe
+bunx create-next-app@latest --version <- esto nos dice la última versión
+
+También vamos a instalar shadcn/ui.Vamos a hacer lo mismo de antes, ver la versión latest pero elegir una concreta
+
+bunx --bun shadcn@latest --version <- ver la docu siempre
+bunx --bun shadcn@2.1.8 init <- instalamos la versión del profe
+
+Si bien podemos ir instalando cada componente de esta libreria de uno en uno vamos a instalar todos:
+bunx --bun shadcn@2.1.8 add --all
+
+El routing de Next es bastante sencillo, todo directorio que cree colgando de /app creará una ruta con el name de ese directorio. Además si uso un name entre paréntesis ignorará ese directorio y no creará una ruta ( esto existe por motivos de organización/categorización o estructuración, entre otros). Y si uso corchetes será una ruta con un parámetro dinámico (y esto obliga a que el componente sea asíncrono y sea de servidor) Por defecto los files son Server files, hay que anotarlos como client file para usar hooks,etc
+
+NOTA: si paso una ref de React a un elemento nativo HTML se va a attachear automáticamente al DOM (ojo, si estuviera en clases).Sin embargo, si lo attacheamos a un FunctionalComponent recibirá un null
+
+const CustomInput () = forwardRef((props,ref)) => {
+  return (<input ref={ref} />); // mi componente
+}
+
+functionRefAttaching2(){
+  const inputRef = useRef(null);
+  useEffect(() => {
+    console.log("inputRef value:", inputRef.current)
+  },[])
+  return <CustomInput ref={inputRef} /> <- aqui no se pega al DOM
+}
+
+https://www.youtube.com/watch?v=m4QbeS9BTNU
+
+Para solucionar esto tengo que usar la API forwardRef, fijate que es como que tengo que declarar yo los pases de esa ref, siempre que venga de React
+O sea forwardRef permite pasar referencias a functional components, para que estos lo pasen al DOM
+
+Sin embargo, esta API tiene muchos problemas, como namings o que solo se puede pasar una ref(para evitar esto puedo usar una ref con varias ref dentro):
+
+const MyForm = forwardRef<HTMLInputElement, { onClick?: () => void 0}>(function MyForm(props, ref){
+  return (
+    <form>
+      <input ref={ref} /> 
+      <input ref={ref} />
+      <button onClick={props.onClick}>Submit<button/>
+    </form>
+  )
+}
+)
+
+function GoodbyeForwardRef42(){
+  const formRef = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <MyForm ref={formRef} /> <- se la pasará al primer input
+  )
+}
+
+Se recomienda usar el custom ref pattern 
+03 CLERK AUTH
+1h 30m Auth: ir a clerk.com, logearse o crear cuenta si es necesario y crear una aplicacion nueva, seleccionando el Provider para la auth.
+Instalar clerk para next:
+>bun add @clerk/nextjs@6.10.3
+Copiar las variables de entorno
+
+Para proteger mis rutas (fijate que por defecto el middleware dejó todas abiertas) hay que configurar su middleware(seguir la docu) pero basicamente es traer el createRouteMatcher y definir el arreglo de rutas protegidas y usar la callback de clerkMiddleware
+1h54m Database setup
+
+04 DATABASE
+
+We will use Postgre from www.neon.tech and setup a DrizzleORM.It is both relational and sql-like query sintax.It is serverless by default, and force us to "understand" our queries(en resumen la sintaxis se parece más a sql,no como Prisma que cambia mucho)
+
+const result  = await db.query.users.findMany({
+  with: {
+    post: true <- aqui no se ve bien que es un leftJoin, por ejemplo(esto es Prisma)
+  }
+})
+
+await db
+  .select()
+  .from(countries)
+  .leftJoin(cities, eq(cites.countryId, countries.id))
+  .where(eq(countries.id,10)) <- parece un mejor approach
+
+Para conectar Drizzle con Neon https://orm.drizzle.team/docs/get-started/postgresql-new
+https://orm.drizzle.team/docs/connect-neon
+
+> bun add drizzle-orm
+> bun add @neondatabase/serverless@0.10.4
+> bun add dotenv@16.4.7
+> bun add -D drizzle-kit@0.30.3
+> bun add -D tsx@4.19.2
+
+Despues crear un db/index.ts con la conexión, un db/schema.ts con los schemas y un drizzle.config.ts en el root(ojo, no en db, y db cuelga de root tmb)
+
+>npx drizzle-kit push <- para pushear cambios a la DB, ojo se recomienda usar otros comandos como generate o migrate, que supongo que serán más rápidos que push
+>bunx drizzle-kit studio <- abre un GUI para interactuar con la DB
+
+05 WEBHOOK SYNC (2h14m): vamos a crear un local tunnel que comunique clerk con nuestra db (a través de los webhooks que expone Clerk)
+Antonio recomienda usar ngrok (me dan un dominio estático?)
+Asi pues voy a la web de ngrok, me registro y lo instalo por terminal o bajando el ejecutable
+Despues pinchar en domain (ojo, solo me van a adar un único dominio estático)
+Fijate lo que dijo de la flag --url y --domain
+Vamos a instalar concurrently (se llama asi el pkg) para ejecutar multiples comandos de forma concurrente (a la vez)
+>bun add concurrently@9.1.2
+Seguir el video para levantar los dos comandos concurrentemente
+Ahora si, ir a clerk.com, a configure/webhooks y creamos un endpoint con el dominio anterior + el sufijo que queramos y nos subscribimos a los eventos que queramos. Copio el token al .env y sigo por https://clerk.com/docs/webhooks/sync-data
+<bun add svix@1.45.1
+
+06 tRPC setup Ha elegido esta solución porque tiene end-to-end typesafety (no SQL injection?), hooks are familiar(useQuery, useMutation,etc) and the v11 allows us to do authenticated prefetching
+2h45m Why prefetching? 
+ - faster load times
+ - parallel data loading
+ - "render as you fetch" concept
+ - leverage react server components as loaders ( )
+
+Paso 1: usar un server component para el prefetch de la data 
+Paso 2: automáticamente esta data es cacheada
+Paso 3: creamos un HydratetClientComponent como wrapper de nuestro ClientComponent, asi nuestro client compo puede acceder a la cache (fijate que el client compo ya nunca va a comunicarse con el server component, solo sube hasta el paso dos).Esto acelerará nuestra app
+
+
+Ejemplo(fijate que es un server component y que la primera instrucción monta la caché, muy parecido a lo que usamos con nuestro StatusManager (copialo un dia, asinto) y que tmb tenemos el ClientComponent)
+
+const Page = async ({params: {videoId }}) => {
+  void trpc.videos.prefetch({videoId}); 
+
+  return (
+    <HydrateClient>
+     <Suspense fallback={<p>Loading...</p>}>
+      <ErrorBoundary fallback={<p>Error</p>}>
+        <VideoClient videoId={videoId} />
+      </ErrorBoundary>
+    </Suspense>
+    </HydrateClient>
+  )
+}
+
+"use client"
+const VideoClient = ({videoId}) => {
+  const utils = trpc.useUtils();
+  const [videos] = trpc.videos.useSuspenseQuery({videoId}); <- esto accede a la caché
+
+  const revalidate = () => {
+    utils.videos.invalidate({videoId}) <-
+  }
+
+  return (
+    <div>
+      {videos.map((video) => <p>{video.id}</p>)} // videos nunca va a ser null 
+      <button onClick={revalidate}>revalidate</button>
+    </div>
+  )
+}
+NOTA: cuando manda el server los datos a la caché? Hay que entrar a la ruta?
+Una versión canary es una nueva versión que es desplegada a un pequeño subset de usuarios antes de ser lanzada a todos los usuarios 
+
+Docu: https://trpc.io/docs/client/nextjs/setup
+
+Serialization and deserialization are processes commonly used in computer science to transforma data structures or objects into a format that can be easily stored, transmitted or reconstructed
+Serialization: the serializated data is often a JSON, XML or binary data. Fijate que muchos lenguajes al pasar de Clase a JSON necesitan esto
+JSON.stringify no permite serializar tipos como undefined, bigInt, Date, RegExp, Set or Map (fijate que al final superjson es un thin wrapper sobre JSON.stringify and JSON.parse ampliando su functionality) Puez no sabia esto,asin
+
+Recuerda, vamos a tener dos instancias de trpc, una para el server y otra para el cliente(obviamente una viene de @trpc/server y la otra de @trpc/client).
+
+3h08m parte 5 crear un trpc caller for server components
+Fijate que hay tres modos de hacer el fetch, en el cliente, en el servidor y una forma híbrida(que es el prefetch que queremos)
+Este patrón se llama server-first data pattern (es de Next solo??)
+
+Prefetchilng is hard, but it's also one of the best ways to get data to your users as fast as possible. There are multiples ways to prefetch data:
+1- on the server: with server-side-rendering or fetching in server components, we can seed the cache before the component renders on the client
+2- in route loaders: in an SPA, the route loader is probably as high-up in the tree as possible
+3 - in a root component with usePrefetchQuery
+4 - in event handlers with queryClient.prefetchQuery 
+Entiendo que la 3 y la 4 montan una cache tmb. Fijate que el trade-off de tener que hacer dos pasos (montar la cache + consumirla) puede llevar a downsides (como dejar montados endpoints que no se consuman u olvidarse de montarla).Para solucionar esto la idea de los autores de tanstack es usar un modo estricto( es un HOC Provider que montariamos en un punto alto simplemente) y que suelta warnings tipo 'prefetch-missing' or 'unnecessary-prefetch' por los motivos anteriores
+
+3h 31m 07 tRPC configuration (mix tRPC with Clerk)
+1- We're going to enable transformers on tRPC (adapters?)
+2- We will add auth to tRPC context to protect routes/queries
+3- We'll add protectedProcedures
+4- We'll add rate limiting(a través del provider upstash.com)
+
+3h56 08 Video Categories
+- Create categories schema
+- Push changes to the database
+- Seed categories (fijate que esto es algo que es responsabilidad de un admin y no de un user)
+- Organize tRPC routes
+- Prefetch categories
+- Create categories UI component (un Carousel de tags) 
+We will leverage before knowledge with a real implementation
+
+4h:48m Studio Layout
+1- Create studio route group
+2- Create studio layout
+3- Protect studio routes
+
+matching an enumerate of anything with Icons(or any config)
+// 1 - create the enumerate
+const callStatuses = {
+ SUCCESS: 'SUCCESS ,
+ PENDING: 'PENDING',
+ ERROR: 'ERROR',
+ INITIAL: 'INITIAL'
+}
+
+// create the type for the whole enumerate
+type CallStatus = typeof callStatuses; (ojo, keyof typeof crea una union type, queremos el tipo de toda la data structure)
+
+type Config = 
+| {
+  type: CallStatus['SUCCESS'],
+  icon: SuccessIcon,
+} 
+| {
+  type: CallStatus['PENDING'],
+  icon: PendingIcon,
+}
+| {
+  type: CallStatus['ERROR'],
+  icon: ErrorIcon
+}
+// Mapa de strings y timeouts
+const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+const timeout = setTimeout(() => {
+  // do any work
+  dispatch({
+    type: "REMOVE_TOAST",
+    toastId: "sdfjksdf"
+  })
+}, 10000)
+toastTimeouts.set("skdfj", timeout)
+repasar flex-shrink flex-1 etc
+
+#10 Studio Videos 5h19m
+1- Create Videos Schema
+2- Push database changes
+3- Create studio procedures
+4- Add video record creation
+
+6h07m Infinite Loading
+1- Add suspense and error boundaries
+2- Create reusable InfiniteScroll component
+3- Demonstrate infinite scroll
