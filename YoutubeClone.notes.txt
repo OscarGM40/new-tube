@@ -248,3 +248,23 @@ repasar flex-shrink flex-1 etc
 1- Add suspense and error boundaries
 2- Create reusable InfiniteScroll component
 3- Demonstrate infinite scroll
+
+6h28m Mux Video Service Integration
+1- Create Modal
+Mux free account limitations
+ - length limit of 30 secs
+ -  video deletion after 24h
+ - mux watermark 
+ get a 15-secs video (https://tinyurl.com/newtube-clip)
+
+ 6h59m updated Video Schema with mux fields (in video procedure)
+ 7h51:30 usind format from date-fns
+
+ Git stash: fijate que realmente si que lo necesito, sobre todo cuando esté sobre un trabajo con errores,etc, al que no le puedo hacer commit.Es  un commit local
+ >git stash <- para guardar los cambios actuales
+ >git stash list 
+Con git stash list puedo ver todos los stashes locales
+Con git stash pop recupero el último stash (fijate que tmb borra la referencia lo cual tiene sentido)
+
+Imaginando que realmente no queremos lo que hay en el stash,fue algo temporal y además en el cambio me di cuenta que no era buena idea lo puedo borrar con git stash drop
+>git stash drop (pero borra el último o todos??)
