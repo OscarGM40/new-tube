@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { integer, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 
 // dado que vamos a buscar mucho por el clerkId le agregamos un index (3er parameter of pgTAble and it is a callback, t es table, asinto)
 // Tmb podriamos haber usado varchar, text seguramente ocupen más
@@ -50,7 +51,7 @@ export const videos = pgTable("videos", {
   thumbnailUrl: text("thumbnail_url"),
   previewUrl: text("preview_url"),
   duration: integer("duration").default(0).notNull(),
-  visibility: videoVisibility("visibility").default('private').notNull(),
+  visibility: videoVisibility("visibility").default("private").notNull(),
   userId: uuid("user_id")
     .references(() => users.id, {
       onDelete: "cascade", //ojo, User es padre de esta entidad (la que tiene la referencia es hija, asi que es cuando se borre un usuario que se borrarían sus videos, no al revés)
@@ -63,6 +64,9 @@ export const videos = pgTable("videos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+export const videoInsertSchema = createInsertSchema(videos);
+export const videoUpdateSchema = createUpdateSchema(videos);
+export const videoSelectSchema = createSelectSchema(videos);
 
 // relations have a higher level of abstraction as foreignKeys have.They only define relations between tables, they don't create foreign keys. They can be used together since this only works at application level
 export const videoRelations = relations(videos, ({ one }) => ({

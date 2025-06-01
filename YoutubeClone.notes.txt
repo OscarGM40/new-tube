@@ -268,3 +268,19 @@ Con git stash pop recupero el último stash (fijate que tmb borra la referencia 
 
 Imaginando que realmente no queremos lo que hay en el stash,fue algo temporal y además en el cambio me di cuenta que no era buena idea lo puedo borrar con git stash drop
 >git stash drop (pero borra el último o todos??)
+
+I can give a custom message to the stash using the full command and the -m flag (I think the default is quite expressive)
+>git stash push -m "name"
+And to retrieve it (I can use apply or pop, pop removes the reference, careful with this)
+>git stash pop 1 <- where 1 is the index
+Fijate que usar LIFO, el último stash se pone arriba y es el primero en salir
+> Si quiero limpiar el listado LIFO de referencias con clear
+>git stash clear
+
+
+#14 Video form 8h13m
+1- Add skeleton to videos-section
+2- Create video form page
+3- Create video player
+4- Add ability to update video information
+8h39m ui for video form
