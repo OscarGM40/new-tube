@@ -283,4 +283,10 @@ Fijate que usar LIFO, el último stash se pone arriba y es el primero en salir
 2- Create video form page
 3- Create video player
 4- Add ability to update video information
-8h39m ui for video form
+check if we used navigator.clipboard.writeText and if we used as a Promise
+9h02m ui for video form
+
+UseEffect se ejecuta asincronamente justo despues de que el componente se haya renderizado y el browser haya terminado de pintar la UI(o sea al final de ambos).Como consecuencia de esto la UX es más suave.Adecuado para side effects que no necesitan ser visibles inmediatamente o bloquear la UI (como fetchs, logs, timers, subscriptions...).Como drawback si el efecto se disparará y actualizara el DOM puede haber un pequeño flickering o delay
+UseLayoutEffect se ejecuta sincronamente justo depues de que el componente se haya renderizado pero antes de que el browser pinte la UI.Es ideal por tanto para efectos que necesiten ser aplicados inmediatamente, especialmente si queremos cambios en el DOM que necesitan ser reflejados antes que el usuario vea nada. Ejemplos( medir un tamaño o posición de un elemento, modificar el DOM based on measurements, prevenir flickers o cambios de layout).UseLayoutEffect se asegura que los cambios al DOM se hayan echo antes de que el usuario vea nada
+#15 Video Thumbnails 9h51:50
+#16 AI Background jobs 10h12:12

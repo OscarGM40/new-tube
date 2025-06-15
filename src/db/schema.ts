@@ -49,7 +49,9 @@ export const videos = pgTable("videos", {
   muxTrackId: text("mux_track_id").unique(), //only for videos with subtitles
   muxTrackStatus: text("mux_track_status"), //only for videos with subtitles
   thumbnailUrl: text("thumbnail_url"),
+  thumbnailKey: text("thumbnail_key"), // for deleting files in the Baas purposes
   previewUrl: text("preview_url"),
+  previewKey: text("preview_key"),
   duration: integer("duration").default(0).notNull(),
   visibility: videoVisibility("visibility").default("private").notNull(),
   userId: uuid("user_id")

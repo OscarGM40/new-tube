@@ -6,9 +6,12 @@ import { trpc } from "@/trpc/client";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { StudioUploader } from "./studio-uploader";
+import { useRouter } from "next/navigation";
 
 export const StudioUploadModal = () => {
   const utils = trpc.useUtils();
+  const router = useRouter(); // y que diferencia hay con el router de next/router? Porque son tan subnormales de tener dos?
+
   const create = trpc.videos.create.useMutation({
     onSuccess: () => {
       toast.success("Video created");
@@ -18,6 +21,13 @@ export const StudioUploadModal = () => {
       toast.error(error.message);
     },
   });
+
+  const onSuccess = () => {
+    if (!create.data?.video.id) return;
+
+    create.reset();
+    router.push(`/studio/videos/${create.data.video.id}`);
+  };
   return (
     <>
       <ResponsiveModal
@@ -26,7 +36,7 @@ export const StudioUploadModal = () => {
         onOpenChange={() => create.reset()}
       >
         {create.data?.url ? (
-          <StudioUploader endpoint={create.data.url} onSuccess={() => {}}></StudioUploader>
+          <StudioUploader endpoint={create.data.url} onSuccess={onSuccess}></StudioUploader>
         ) : (
           <Loader2Icon />
         )}
